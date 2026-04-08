@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>汉语阅读助手 · Chinese Reading Assistant</title>
+<style>
+/* ============================================================
+   CSS Variables
+============================================================ */
+:root {
+  --char-size: 30px;
+  --pinyin-size: 16px;
+  --primary: #3a6fa8;
+  --primary-dk: #2a5590;
+  --primary-lt: #e8f1fb;
+  --accent: #5b9bd5;
+  --success: #28a86a;
+  --warning-bg: #fff8e6;
+  --warning-bd: #f5d87a;
+  --warning-tx: #856404;
+  --error-bg: #fff2f0;
+  --error-bd: #ffb8b0;
+  --error-tx: #c0392b;
+  --text: #1e2a3a;
+  --text-2: #637084;
+  --text-3: #9aa5b1;
+  --bg: #ecf1f8;
+  --card: #ffffff;
+  --divider: #e4eaf4;
+  --pinyin-color: #4d87c4;
+  --r: 14px;
+  --shadow: 0 4px 24px rgba(44,95,168,.09);
+}
+
+/* ============================================================
+   Reset
+============================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, "PingFang SC", "Microsoft YaHei", "Noto Sans SC", "Hiragino Sans GB", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding-bottom: 64px;
+}
+
+/* ============================================================
+   Layout
+============================================================ */
+.wrap {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* ============================================================
+   Header
+============================================================ */
+header {
+  background: linear-gradient(135deg, #1e4a80 0%, #3a6fa8 55%, #5090cc 100%);
+  padding: 36px 0 28px;
+  margin-bottom: 26px;
+  box-shadow: 0 6px 28px rgba(30,74,128,.28);
+}
+header .wrap { text-align: center; }
+.hdr-title {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 3px;
+  margin-bottom: 6px;
+  text-shadow: 0 2px 8px rgba(0,0,0,.18);
+}
+.hdr-sub {
+  font-size: .88rem;
+  color: rgba(255,255,255,.82);
+  letter-spacing: .5px;
+}
+
+.top-guide {
+  background: #f4f8fe;
+  border-left: 4px solid var(--accent);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+  color: var(--text-2);
+  line-height: 1.75;
+  box-shadow: var(--shadow);
+}
+
+/* ============================================================
+   Card
+============================================================ */
+.card {
+  background: var(--card);
+  border-radius: var(--r);
+  padding: 22px 26px 26px;
+  box-shadow: var(--shadow);
+  margin-bottom: 20px;
+  border: 1px solid rgba(200,215,235,.5);
+}
+
+.card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 2px solid var(--divider);
+}
+
+.card-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.card-head.clickable {
+  cursor: pointer;
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.card-head.clickable:hover .card-title { color: var(--primary-dk); }
+
+/* ============================================================
+   Buttons
+============================================================ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 18px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13.5px;
+  font-family: inherit;
+  font-weight: 600;
+  transition: background .18s, box-shadow .18s, transform .12s;
+  white-space: nowrap;
+  line-height: 1;
+}
+.btn:active { transform: scale(.96); }
+
+.btn-primary   { background: var(--primary); color: #fff; }
+.btn-primary:hover { background: var(--primary-dk); box-shadow: 0 4px 14px rgba(42,85,144,.32); }
+
+.btn-ghost     { background: var(--primary-lt); color: var(--primary); }
+.btn-ghost:hover { background: #d4e5f8; }
+
+.btn-outline   { background: transparent; border: 2px solid var(--primary); color: var(--primary); }
+.btn-outline:hover { background: var(--primary-lt); }
+.btn-outline.active { background: var(--primary); color: #fff; }
+
+.btn-success   { background: var(--success); color: #fff; }
+.btn-success:hover { background: #1f9259; box-shadow: 0 4px 14px rgba(40,168,106,.3); }
+
+.btn-secondary {
+  background: #eef5ff;
+  color: var(--primary-dk);
+  border: 1px solid #cfe0f6;
+}
+.btn-secondary:hover { background: #ddeafa; }
+
+.btn-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+/* ============================================================
+   Sliders
+============================================================ */
+.slider-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+}
+
+.slider-box {
+  background: #f5f8fd;
+  border-radius: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--divider);
+}
+
+.slider-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12.5px;
+  color: var(--text-2);
+  margin-bottom: 9px;
+  font-weight: 500;
+}
+.slider-label .v { color: var(--primary); font-weight: 700; font-size: 13px; }
+
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 5px;
+  border-radius: 3px;
+  cursor: pointer;
+  outline: none;
+  transition: opacity .2s;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px; height: 20px;
+  background: var(--primary);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(42,85,144,.38);
+  border: 3px solid #fff;
+  transition: transform .15s;
+}
+input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.18); }
+input[type="range"]::-moz-range-thumb {
+  width: 18px; height: 18px;
+  background: var(--primary);
+  border-radius: 50%;
+  cursor: pointer;
+  border: 3px solid #fff;
+  box-shadow: 0 2px 6px rgba(42,85,144,.3);
+}
+
+/* ============================================================
+   Reading Area
+============================================================ */
+.reading-area { min-height: 100px; }
+
+/* Paragraph block */
+.para-block {
+  margin-bottom: 14px;
+}
+.para-block:last-child { margin-bottom: 0; }
+
+/* Chinese line — flex wrap, top-aligned so every row shares the same baseline */
+.zh-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  row-gap: 6px;
+}
+
+/* ─── Word Unit ─── */
+.wu {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2px 3px;
+  border-radius: 5px;
+  transition: background .14s;
+  user-select: none;
+  vertical-align: top;
+}
+
+.wu:not(.wu-p) {
+  cursor: pointer;
+}
+.wu:not(.wu-p):hover { background: rgba(58,111,168,.11); }
+.wu.wu-p  { cursor: default; }
+.wu.wu-no-py {
+  padding-left: 0;
+  padding-right: 0;
+}
+.wu.wu-hi {
+  background: #fff2bf;
+  box-shadow: inset 0 -0.2em 0 rgba(255, 219, 102, .55);
+}
+.wu.wu-hi:hover {
+  background: #ffedaa;
+}
+
+/* Pinyin — visibility:hidden keeps its height, preventing layout shift */
+.py {
+  display: block;
+  font-size: var(--pinyin-size);
+  color: var(--pinyin-color);
+  line-height: 1.35;
+  white-space: nowrap;
+  font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity .18s;
+  text-align: center;
+}
+.py.py-on { visibility: visible; opacity: 1; }
+.py:not(.py-p) {
+  min-width: 1.6em;
+  padding: 1px 4px;
+  border-radius: 6px;
+  cursor: text;
+}
+.py:not(.py-p):hover {
+  background: rgba(77,135,196,.12);
+}
+.py.py-editing {
+  visibility: visible;
+  opacity: 1;
+  background: #fff;
+  box-shadow: 0 0 0 2px rgba(58,111,168,.18);
+}
+.py.py-editing:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(58,111,168,.22);
+}
+.py.py-empty {
+  min-width: 0;
+  padding: 0;
+}
+
+/* Character — 楷体 */
+.ch {
+  display: block;
+  font-size: var(--char-size);
+  line-height: 1.3;
+  color: var(--text);
+  text-align: center;
+  font-family: "KaiTi", "STKaiti", "楷体", "AR PL UKai CN", serif;
+}
+
+/* ============================================================
+   Input Module
+============================================================ */
+.collapsible {
+  overflow: hidden;
+  transition: max-height .32s ease;
+}
+.collapsible-inner {
+  padding-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.toggle-ico {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1rem;
+  color: var(--text-3);
+  transition: transform .28s;
+  padding: 4px 6px;
+  line-height: 1;
+  border-radius: 6px;
+}
+.toggle-ico:hover { background: var(--primary-lt); color: var(--primary); }
+.toggle-ico.closed { transform: rotate(-90deg); }
+
+.fmt-hint {
+  background: #f4f8fe;
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+  padding: 12px 15px;
+  font-size: 13px;
+  color: var(--text-2);
+  line-height: 1.75;
+  margin-bottom: 14px;
+}
+.fmt-hint code {
+  font-family: "Courier New", monospace;
+  background: rgba(58,111,168,.1);
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 12px;
+  color: var(--primary-dk);
+}
+
+textarea.input-area {
+  width: 100%;
+  min-height: 210px;
+  padding: 13px 15px;
+  border: 2px solid var(--divider);
+  border-radius: 10px;
+  font-family: "Courier New", monospace;
+  font-size: 14px;
+  line-height: 1.75;
+  resize: vertical;
+  color: var(--text);
+  background: #fafcff;
+  transition: border-color .2s, box-shadow .2s;
+  margin-bottom: 0;
+}
+textarea.input-area:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(58,111,168,.14);
+}
+
+.msg {
+  margin-top: 10px;
+  padding: 10px 15px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.65;
+  display: none;
+}
+.msg.show { display: block; }
+.msg-warn  { background: var(--warning-bg); border: 1px solid var(--warning-bd); color: var(--warning-tx); }
+.msg-error { background: var(--error-bg);   border: 1px solid var(--error-bd);   color: var(--error-tx); }
+
+.action-bar {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+/* ============================================================
+   Empty State
+============================================================ */
+.empty {
+  text-align: center;
+  padding: 44px 20px;
+  color: var(--text-3);
+}
+.empty .ico { font-size: 2.8rem; margin-bottom: 10px; }
+.empty p { font-size: .92rem; }
+
+/* ============================================================
+   Responsive
+============================================================ */
+@media (max-width: 580px) {
+  .hdr-title { font-size: 1.5rem; letter-spacing: 1.5px; }
+  .card { padding: 15px 16px 20px; }
+  .btn { font-size: 12.5px; padding: 7px 13px; }
+  .slider-grid { grid-template-columns: 1fr; }
+}
+
+/* ============================================================
+   Print
+============================================================ */
+@page {
+  size: letter portrait;
+  margin: 0.5in;
+}
+
+@media print {
+  :root {
+    --char-size: 22pt;
+    --pinyin-size: 10pt;
+  }
+
+  body {
+    background: #fff;
+    color: #000;
+    padding: 0;
+    min-height: auto;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  #readingCard,
+  #readingCard * {
+    visibility: visible;
+  }
+
+  #readingCard {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  #readingCard .card-head,
+  #readingCard .empty {
+    display: none;
+  }
+
+  #readingArea {
+    min-height: 0;
+  }
+
+  .para-block {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin-bottom: 18pt;
+  }
+
+  .zh-line {
+    row-gap: 4pt;
+  }
+
+  .wu {
+    padding: 0 2pt;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .wu:hover,
+  .wu:not(.wu-p):hover,
+  .py:not(.py-p):hover {
+    background: transparent;
+  }
+
+  .py {
+    display: block;
+    color: #000;
+    line-height: 1.2;
+    padding: 0;
+    border-radius: 0;
+    box-shadow: none;
+    min-width: 0;
+    visibility: hidden;
+    opacity: 0;
+  }
+
+  .py.py-on,
+  .py.py-editing {
+    visibility: visible;
+    opacity: 1;
+  }
+
+  .py.py-p {
+    visibility: hidden;
+    opacity: 0;
+  }
+
+  .ch {
+    color: #000;
+    line-height: 1.2;
+  }
+
+  .wu.wu-hi,
+  .wu.wu-hi:hover {
+    background: #fff2bf !important;
+    box-shadow: inset 0 -0.14em 0 rgba(255, 219, 102, .7) !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+</style>
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<header>
+  <div class="wrap">
+    <div class="hdr-title">汉语阅读助手</div>
+    <div class="hdr-sub">Chinese Reading Assistant</div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="top-guide">
+    生成阅读视图时会自动为对应汉字生成拼音，点击汉字可显示或隐藏该字拼音；点击拼音本身仍可直接修改。<br>
+    Pinyin is generated automatically for each Chinese character when the reading view is created. Click a character to show or hide its pinyin; click the pinyin itself to edit it directly.
+  </div>
+
+  <!-- ===== CONTROLS CARD ===== -->
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title">📋 阅读控制 Reading Controls</div>
+    </div>
+
+    <div class="btn-group">
+      <button class="btn btn-outline"  id="pyBtn" onclick="togglePinyin()">▲ 显示全部拼音</button>
+      <button class="btn btn-outline"  id="highlightBtn" onclick="toggleHighlightMode()">🖍 选字高亮</button>
+      <button class="btn btn-secondary" id="printBtn" onclick="printReadingContent()">🖨 打印阅读内容</button>
+    </div>
+
+    <div class="slider-grid">
+      <div class="slider-box">
+        <div class="slider-label"><span>汉字字号 Char size</span><span class="v" id="csVal">30px</span></div>
+        <input type="range" id="csSlider" min="18" max="64" value="30" oninput="onSlide(this,'csVal','--char-size')">
+      </div>
+      <div class="slider-box">
+        <div class="slider-label"><span>拼音字号 Pinyin size</span><span class="v" id="psVal">16px</span></div>
+        <input type="range" id="psSlider" min="10" max="32" value="16" oninput="onSlide(this,'psVal','--pinyin-size')">
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== READING CARD ===== -->
+  <div class="card" id="readingCard">
+    <div class="card-head">
+      <div class="card-title">📖 阅读内容 Reading Content</div>
+    </div>
+    <div class="reading-area" id="readingArea">
+      <div class="empty"><div class="ico">📚</div><p>正在加载示例对话…</p></div>
+    </div>
+  </div>
+
+  <!-- ===== INPUT MODULE CARD ===== -->
+  <div class="card">
+    <!-- collapsible header -->
+    <div class="card-head clickable" onclick="toggleInput()" id="inputHead">
+      <div class="card-title">✏️ 自定义文本输入 Custom Input</div>
+      <button class="toggle-ico" id="toggleIco" aria-label="展开/折叠">▼</button>
+    </div>
+
+    <div class="collapsible" id="inputBody">
+      <div class="collapsible-inner">
+
+        <div class="action-bar">
+          <button class="btn btn-success" onclick="generate()">▶ 生成阅读视图</button>
+          <button class="btn btn-ghost"   onclick="loadSample()">📜 载入示例对话</button>
+        </div>
+
+        <textarea class="input-area" id="customInput"
+          placeholder="你好
+我爱学中文"></textarea>
+
+        <div class="msg msg-warn"  id="warnMsg"></div>
+        <div class="msg msg-error" id="errMsg"></div>
+      </div>
+    </div>
+  </div><!-- /input card -->
+
+</div><!-- /wrap -->
+
+<script src="https://unpkg.com/pinyin-pro/dist/index.js"></script>
+
+<!-- ===================================================
+     JAVASCRIPT
+=================================================== -->
+<script>
+"use strict";
+
+/* ── Global state ── */
+let pyVisible   = false;
+let inputOpen   = true;
+let highlightMode = false;
+
+/* ════════════════════════════════════════════════
+   INIT
+════════════════════════════════════════════════ */
+window.addEventListener("DOMContentLoaded", () => {
+  initSliders();
+  initInputAutoResizeSync();
+  /* set collapsible open height after layout stabilises */
+  requestAnimationFrame(() => {
+    const b = document.getElementById("inputBody");
+    b.style.maxHeight = b.scrollHeight + "px";
+  });
+  loadSample();
+});
+
+/* ════════════════════════════════════════════════
+   SLIDERS
+════════════════════════════════════════════════ */
+function initSliders() {
+  const sliders = [
+    { id:"csSlider", valId:"csVal", prop:"--char-size" },
+    { id:"psSlider", valId:"psVal", prop:"--pinyin-size" },
+  ];
+  sliders.forEach(s => {
+    const el = document.getElementById(s.id);
+    setSliderFill(el);
+    document.documentElement.style.setProperty(s.prop, el.value + "px");
+    document.getElementById(s.valId).textContent = el.value + "px";
+  });
+}
+
+function onSlide(el, valId, prop) {
+  document.documentElement.style.setProperty(prop, el.value + "px");
+  document.getElementById(valId).textContent = el.value + "px";
+  setSliderFill(el);
+}
+
+function setSliderFill(el) {
+  const pct = ((el.value - el.min) / (el.max - el.min) * 100).toFixed(1);
+  el.style.background =
+    `linear-gradient(to right, var(--primary) ${pct}%, #dce6f2 ${pct}%)`;
+}
+
+/* ════════════════════════════════════════════════
+   PINYIN CONTROLS
+════════════════════════════════════════════════ */
+function toggleWord(wu) {
+  if (highlightMode) {
+    wu.classList.toggle("wu-hi");
+    return;
+  }
+  const py = wu.querySelector(".py");
+  if (!py) return;
+  py.classList.toggle("py-on");
+}
+
+function getPinyinTargets(blockIndex, unitIndex) {
+  const para = document.querySelector(`.para-block[data-block-index="${blockIndex}"]`);
+  return {
+    para,
+    display: para ? para.querySelector(`.py[data-unit-index="${unitIndex}"]`) : null
+  };
+}
+
+function setPinyinValue(blockIndex, unitIndex, value, options = {}) {
+  const { keepVisible = false, skipDisplay = false } = options;
+  const normalized = (value || "").replace(/\u00A0/g, " ").trim();
+  const { para, display } = getPinyinTargets(blockIndex, unitIndex);
+  const wordUnit = para ? para.querySelector(`.wu .py[data-unit-index="${unitIndex}"]`)?.parentElement : null;
+
+  if (display && !skipDisplay) {
+    display.textContent = normalized || "\u00A0";
+    display.classList.toggle("py-on", keepVisible || pyVisible || !!normalized);
+  }
+
+  if (display) {
+    display.classList.toggle("py-empty", !normalized);
+  }
+  if (wordUnit) {
+    wordUnit.classList.toggle("wu-no-py", !normalized);
+  }
+}
+
+function selectElementText(el) {
+  const sel = window.getSelection();
+  if (!sel) return;
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  sel.removeAllRanges();
+  sel.addRange(range);
+}
+
+function startInlinePinyinEdit(pyEl) {
+  if (!pyEl || pyEl.classList.contains("py-p")) return;
+  pyEl.dataset.lastValue = pyEl.textContent || "\u00A0";
+  pyEl.classList.add("py-on", "py-editing");
+  pyEl.setAttribute("contenteditable", "true");
+  if (pyEl.textContent === "\u00A0") {
+    pyEl.textContent = "";
+  }
+  pyEl.focus();
+  selectElementText(pyEl);
+}
+
+function finishInlinePinyinEdit(pyEl) {
+  if (!pyEl) return;
+  const blockIndex = pyEl.dataset.blockIndex;
+  const unitIndex = pyEl.dataset.unitIndex;
+  const value = pyEl.textContent || "";
+  pyEl.removeAttribute("contenteditable");
+  pyEl.classList.remove("py-editing");
+  setPinyinValue(blockIndex, unitIndex, value, { keepVisible: true });
+  pyEl.dataset.lastValue = pyEl.textContent || "\u00A0";
+}
+
+function showAll() {
+  document.querySelectorAll(".py:not(.py-p)").forEach(p => p.classList.add("py-on"));
+}
+
+function hideAll() {
+  document.querySelectorAll(".py").forEach(p => p.classList.remove("py-on"));
+}
+
+function syncPinyinButton() {
+  const btn = document.getElementById("pyBtn");
+  btn.textContent = pyVisible ? "▼ 隐藏全部拼音" : "▲ 显示全部拼音";
+  btn.classList.toggle("active", pyVisible);
+}
+
+function syncHighlightButton() {
+  const btn = document.getElementById("highlightBtn");
+  if (!btn) return;
+  btn.textContent = highlightMode ? "🖍 关闭选字高亮" : "🖍 选字高亮";
+  btn.classList.toggle("active", highlightMode);
+}
+
+function togglePinyin() {
+  pyVisible = !pyVisible;
+  if (pyVisible) {
+    showAll();
+  } else {
+    hideAll();
+  }
+  syncPinyinButton();
+}
+
+function toggleHighlightMode() {
+  highlightMode = !highlightMode;
+  syncHighlightButton();
+}
+
+function printReadingContent() {
+  const area = document.getElementById("readingArea");
+  if (!area) return;
+
+  const hasContent = area.querySelector(".para-block .wu, .para-block .ch");
+  const isEmptyState = !!area.querySelector(".empty");
+  if (!hasContent || isEmptyState) {
+    alert("请先生成阅读内容，再进行打印。");
+    return;
+  }
+
+  const activeEl = document.activeElement;
+  if (activeEl && activeEl.classList && activeEl.classList.contains("py-editing")) {
+    activeEl.blur();
+  }
+
+  window.print();
+}
+
+/* ════════════════════════════════════════════════
+   COLLAPSIBLE INPUT SECTION
+════════════════════════════════════════════════ */
+function toggleInput() {
+  inputOpen = !inputOpen;
+  const body = document.getElementById("inputBody");
+  const ico  = document.getElementById("toggleIco");
+  if (inputOpen) {
+    /* animate open: briefly measure scrollHeight, then set it */
+    body.style.maxHeight = body.scrollHeight + "px";
+    ico.classList.remove("closed");
+  } else {
+    /* snapshot current height before collapsing (for smooth animation) */
+    body.style.maxHeight = body.scrollHeight + "px";
+    /* force reflow then animate to 0 */
+    body.getBoundingClientRect();
+    body.style.maxHeight = "0";
+    ico.classList.add("closed");
+  }
+}
+
+function refreshInputBodyHeight() {
+  if (!inputOpen) return;
+  const body = document.getElementById("inputBody");
+  body.style.maxHeight = body.scrollHeight + "px";
+}
+
+function initInputAutoResizeSync() {
+  const input = document.getElementById("customInput");
+  if (!input) return;
+
+  if (typeof ResizeObserver === "function") {
+    const observer = new ResizeObserver(() => {
+      refreshInputBodyHeight();
+    });
+    observer.observe(input);
+  }
+
+  input.addEventListener("mouseup", refreshInputBodyHeight);
+  input.addEventListener("touchend", refreshInputBodyHeight, { passive: true });
+}
+
+/* ════════════════════════════════════════════════
+   PARSER
+   Input format: preserve each input line in the reading view
+════════════════════════════════════════════════ */
+
+/* Unicode ranges that count as CJK characters needing pinyin */
+const CJK_RE = /[\u4e00-\u9fff\u3400-\u4dbf\uf900-\ufaff\u20000-\u2a6df]/u;
+function isCJK(ch) { return CJK_RE.test(ch); }
+const DIGIT_PINYIN = {
+  "0": "líng",
+  "1": "yī",
+  "2": "èr",
+  "3": "sān",
+  "4": "sì",
+  "5": "wǔ",
+  "6": "liù",
+  "7": "qī",
+  "8": "bā",
+  "9": "jiǔ"
+};
+function isArabicDigit(ch) {
+  return /^[0-9]$/.test(ch);
+}
+function needsAutoPinyin(ch) {
+  return isCJK(ch) || isArabicDigit(ch);
+}
+function looksLikeChineseLine(text) {
+  return [...text].some(isCJK);
+}
+
+const PUNCT_RE = /[，。！？：；、（）【】《》“”‘’.,!?;:()[\]<>"']/;
+function isPunctuation(ch) {
+  return PUNCT_RE.test(ch);
+}
+
+function buildUnitsFromChinese(chinese) {
+  const chars = [...chinese.trim()];
+  const charsNeedingPinyin = chars.filter(needsAutoPinyin);
+  const pinyinValues = generatePinyinForChars(charsNeedingPinyin, { silent: true }) || [];
+  let pyIndex = 0;
+
+  return chars.map(ch => {
+    if (needsAutoPinyin(ch)) {
+      const py = pinyinValues[pyIndex] || "";
+      pyIndex++;
+      return { ch, py, isPunct: false };
+    }
+    return { ch, py: "", isPunct: true };
+  });
+}
+
+/**
+ * Parse raw text into an array of block objects:
+ *   { units: [{ch,py,isPunct}…] }
+ * Returns { blocks, warns }
+ */
+function parseText(raw) {
+  const segments = raw.replace(/\r\n?/g, "\n").split("\n");
+
+  const blocks = [];
+  const warns  = [];
+
+  segments.forEach((seg, idx) => {
+    const label = `第 ${idx + 1} 行`;
+    const zhLine = seg.trim();
+
+    if (!zhLine) {
+      blocks.push({ units: [], isEmpty: true });
+      return;
+    }
+
+    if (!looksLikeChineseLine(zhLine)) {
+      warns.push(`${label}：第一行需要是汉语内容，已跳过。`);
+      return;
+    }
+
+    const units = buildUnitsFromChinese(zhLine);
+    const cjkCount = units.filter(unit => !unit.isPunct).length;
+    const filledCount = units.filter(unit => !unit.isPunct && unit.py).length;
+    if (cjkCount && filledCount !== cjkCount) {
+      warns.push(`${label}：有部分汉字暂时未能自动生成拼音，可直接点击上方拼音进行修改。`);
+    }
+
+    blocks.push({ units, isEmpty: false });
+  });
+
+  return { blocks, warns };
+}
+
+/* ════════════════════════════════════════════════
+   RENDERER
+════════════════════════════════════════════════ */
+function renderBlocks(blocks) {
+  const area = document.getElementById("readingArea");
+  area.innerHTML = "";
+
+  if (!blocks.length) {
+    area.innerHTML =
+      `<div class="empty"><div class="ico">🤔</div>
+       <p>没有可渲染的内容，请检查输入格式。</p></div>`;
+    return;
+  }
+
+  const frag = document.createDocumentFragment();
+
+  blocks.forEach((block, blockIndex) => {
+    const paraDiv = document.createElement("div");
+    paraDiv.className = "para-block";
+    paraDiv.dataset.blockIndex = String(blockIndex);
+
+    if (block.isEmpty) {
+      frag.appendChild(paraDiv);
+      return;
+    }
+
+    /* ── Chinese + Pinyin line ── */
+    const zhLine = document.createElement("div");
+    zhLine.className = "zh-line";
+
+    for (const unit of block.units) {
+      const wu = document.createElement("span");
+      wu.className = "wu" + (unit.isPunct ? " wu-p" : "");
+      if (!unit.isPunct) wu.onclick = function() { toggleWord(this); };
+
+      /* Pinyin slot — always present to maintain row height */
+      const py = document.createElement("span");
+      py.className = "py" + (unit.isPunct ? " py-p" : "");
+      py.dataset.blockIndex = String(blockIndex);
+      py.dataset.unitIndex = String(zhLine.children.length);
+      /* non-breaking space gives punctuation slots the same height */
+      py.textContent = unit.isPunct ? "\u00A0" : (unit.py || "\u00A0");
+      if (!unit.isPunct) {
+        py.title = "点击这里直接修改拼音";
+        py.addEventListener("click", function(event) {
+          event.stopPropagation();
+          startInlinePinyinEdit(this);
+        });
+        py.addEventListener("input", function() {
+          setPinyinValue(this.dataset.blockIndex, this.dataset.unitIndex, this.textContent || "", {
+            keepVisible: true,
+            skipDisplay: true
+          });
+        });
+        py.addEventListener("blur", function() {
+          finishInlinePinyinEdit(this);
+        });
+        py.addEventListener("keydown", function(event) {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            this.blur();
+          } else if (event.key === "Escape") {
+            event.preventDefault();
+            this.textContent = this.dataset.lastValue || "\u00A0";
+            this.blur();
+          }
+        });
+      }
+
+      /* Character */
+      const ch = document.createElement("span");
+      ch.className = "ch";
+      ch.textContent = unit.ch;
+
+      if (!unit.isPunct && !unit.py) {
+        wu.classList.add("wu-no-py");
+        py.classList.add("py-empty");
+      }
+
+      wu.appendChild(py);
+      wu.appendChild(ch);
+      zhLine.appendChild(wu);
+    }
+    paraDiv.appendChild(zhLine);
+
+    frag.appendChild(paraDiv);
+  });
+
+  area.appendChild(frag);
+}
+
+function generatePinyinForChars(chars, options = {}) {
+  const { silent = false } = options;
+  const hasPinyinLib = window.pinyinPro && typeof window.pinyinPro.pinyin === "function";
+
+  if (!hasPinyinLib) {
+    const fallback = chars.map(ch => DIGIT_PINYIN[ch] || "");
+    const hasMissing = chars.some((ch, idx) => !fallback[idx] && needsAutoPinyin(ch));
+    if (hasMissing) {
+      if (!silent) {
+        const errEl = document.getElementById("errMsg");
+        errEl.textContent = "❌ 自动拼音功能当前不可用。请确认浏览器可以联网加载拼音库，或手动输入拼音。";
+        errEl.classList.add("show");
+        refreshInputBodyHeight();
+      }
+      return null;
+    }
+    return fallback;
+  }
+
+  return chars.map(ch => {
+    if (DIGIT_PINYIN[ch]) return DIGIT_PINYIN[ch];
+    if (!isCJK(ch)) return "";
+
+    const one = window.pinyinPro.pinyin(ch, {
+      toneType: "symbol",
+      type: "array",
+      nonZh: "removed"
+    });
+    return Array.isArray(one) && one[0] ? one[0] : "";
+  });
+}
+
+/* ════════════════════════════════════════════════
+   GENERATE  (called by button)
+════════════════════════════════════════════════ */
+function generate() {
+  const raw   = document.getElementById("customInput").value;
+  const warnEl = document.getElementById("warnMsg");
+  const errEl  = document.getElementById("errMsg");
+  warnEl.classList.remove("show");
+  errEl.classList.remove("show");
+  warnEl.innerHTML = "";
+  errEl.textContent = "";
+  refreshInputBodyHeight();
+
+  if (!raw.trim()) {
+    errEl.textContent = "⚠️ 请先在下方文本框中输入内容！";
+    errEl.classList.add("show");
+    refreshInputBodyHeight();
+    return;
+  }
+
+  const { blocks, warns } = parseText(raw);
+
+  if (warns.length) {
+    warnEl.innerHTML = warns.map(w => "⚠️ " + w).join("<br>");
+    warnEl.classList.add("show");
+  }
+  refreshInputBodyHeight();
+
+  if (!blocks.length) {
+    errEl.textContent =
+      "❌ 解析失败：未找到有效内容段落。请确认每一行都输入中文内容。";
+    errEl.classList.add("show");
+    refreshInputBodyHeight();
+    return;
+  }
+
+  renderBlocks(blocks);
+
+  /* Reset interactive state */
+  pyVisible = false;
+  hideAll();
+  syncPinyinButton();
+  syncHighlightButton();
+
+  /* Scroll reading card into view */
+  document.getElementById("readingCard")
+    .scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+/* ════════════════════════════════════════════════
+   SAMPLE TEXT
+════════════════════════════════════════════════ */
+const SAMPLE = `\
+你好！欢迎使用汉语阅读助手。`;
+
+function loadSample() {
+  document.getElementById("customInput").value = SAMPLE;
+  generate();
+}
+</script>
+</body>
+</html>
