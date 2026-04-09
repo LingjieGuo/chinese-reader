@@ -9,8 +9,8 @@
    CSS Variables
 ============================================================ */
 :root {
-  --char-size: 36px;
-  --pinyin-size: 20px;
+  --char-size: 30px;
+  --pinyin-size: 16px;
   --primary: #3a6fa8;
   --primary-dk: #2a5590;
   --primary-lt: #e8f1fb;
@@ -645,13 +645,13 @@ input[type="range"]::-moz-range-thumb {
 .zh-line {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-start;
+  align-items: flex-end;
   row-gap: 5pt;
 }
 
 .unit-group {
   display: inline-flex;
-  align-items: flex-start;
+  align-items: flex-end;
   flex-wrap: nowrap;
   white-space: nowrap;
 }
@@ -1072,12 +1072,12 @@ textarea.input-area:focus {
     <div class="top-guide-section">
       <div class="top-guide-label">中文说明</div>
       <div>生成阅读视图时会自动为对应汉字生成拼音，点击汉字可显示或隐藏该字拼音；点击拼音本身仍可直接修改。</div>
-      <div>双击下方阅读预览区域可直接修改文字；完成后点击别处会自动重新生成拼音和阅读效果。</div>
+      <div>点击阅读内容方块里的“编辑内容”按钮可进入编辑模式；再按一次“完成编辑”即可回到阅读模式并自动重新生成拼音和阅读效果。</div>
     </div>
     <div class="top-guide-section">
       <div class="top-guide-label">English</div>
       <div>Pinyin is generated automatically for each Chinese character when the reading view is created. Click a character to show or hide its pinyin; click the pinyin itself to edit it directly.</div>
-      <div>Double-click the reading preview below to edit the text directly; click anywhere else when finished to regenerate the pinyin and reading view automatically.</div>
+      <div>Use the "Edit Content" button inside the reading card to enter edit mode. Click "Done Editing" to return to reading mode and regenerate the pinyin and layout automatically.</div>
     </div>
   </div>
 
@@ -1109,14 +1109,14 @@ textarea.input-area:focus {
       <div class="control-row control-sliders">
         <div class="control-slider char-slider">
           <div class="slider-box">
-          <div class="slider-label"><span>汉字字号 Char size</span><span class="v" id="csVal">36px</span></div>
-          <input type="range" id="csSlider" min="18" max="64" value="36" oninput="onSlide(this,'csVal','--char-size')">
+          <div class="slider-label"><span>汉字字号 Char size</span><span class="v" id="csVal">30px</span></div>
+          <input type="range" id="csSlider" min="18" max="64" value="30" oninput="onSlide(this,'csVal','--char-size')">
           </div>
         </div>
         <div class="control-slider pinyin-slider">
           <div class="slider-box">
-          <div class="slider-label"><span>拼音字号 Pinyin size</span><span class="v" id="psVal">20px</span></div>
-          <input type="range" id="psSlider" min="10" max="32" value="20" oninput="onSlide(this,'psVal','--pinyin-size')">
+          <div class="slider-label"><span>拼音字号 Pinyin size</span><span class="v" id="psVal">16px</span></div>
+          <input type="range" id="psSlider" min="10" max="32" value="16" oninput="onSlide(this,'psVal','--pinyin-size')">
           </div>
         </div>
       </div>
@@ -1128,6 +1128,9 @@ textarea.input-area:focus {
     <div class="card" id="readingCard">
       <div class="card-head">
         <div class="card-title">📖 阅读内容 Reading Content</div>
+        <div class="card-head-actions">
+          <button class="btn btn-secondary btn-compact" id="previewEditBtn" type="button" aria-label="编辑内容 Edit content" title="编辑内容 Edit content" onclick="togglePreviewRawEdit()"><span class="btn-icon">✏️</span><span class="btn-text">编辑内容 Edit Content</span></button>
+        </div>
       </div>
       <div class="reading-area" id="readingArea">
         <div class="reading-workbench">
@@ -1200,6 +1203,7 @@ window.addEventListener("DOMContentLoaded", () => {
   initSliders();
   initInputAutoResizeSync();
   initReadingPreviewEditing();
+  syncPreviewEditButton();
   initReadingControlsPanel();
   /* set collapsible open height after layout stabilises */
   requestAnimationFrame(() => {
@@ -1590,15 +1594,25 @@ function setReadingSourceText(raw) {
 function initReadingPreviewEditing() {
   const preview = document.getElementById("readingPreview");
   if (!preview) return;
+}
 
-  preview.addEventListener("dblclick", () => {
-    enterPreviewRawEdit();
-  });
+function syncPreviewEditButton() {
+  const btn = document.getElementById("previewEditBtn");
+  if (!btn) return;
+  btn.classList.toggle("active", previewRawEditMode);
+  btn.setAttribute("aria-label", previewRawEditMode ? "完成编辑 Done editing" : "编辑内容 Edit content");
+  btn.setAttribute("title", previewRawEditMode ? "完成编辑 Done editing" : "编辑内容 Edit content");
+  btn.innerHTML = previewRawEditMode
+    ? '<span class="btn-icon">✅</span><span class="btn-text">完成编辑 Done Editing</span>'
+    : '<span class="btn-icon">✏️</span><span class="btn-text">编辑内容 Edit Content</span>';
+}
 
-  preview.addEventListener("blur", () => {
-    if (!previewRawEditMode) return;
+function togglePreviewRawEdit() {
+  if (previewRawEditMode) {
     commitPreviewRawEdit();
-  }, true);
+    return;
+  }
+  enterPreviewRawEdit();
 }
 
 function enterPreviewRawEdit() {
@@ -1606,6 +1620,7 @@ function enterPreviewRawEdit() {
   if (!preview || previewRawEditMode) return;
 
   previewRawEditMode = true;
+  syncPreviewEditButton();
   previewRawDraft = getReadingSourceText();
   preview.classList.add("is-editing-raw");
   preview.setAttribute("contenteditable", "plaintext-only");
@@ -1627,7 +1642,7 @@ function enterPreviewRawEdit() {
     }
     if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
       event.preventDefault();
-      preview.blur();
+      commitPreviewRawEdit();
     }
   };
 
@@ -1654,6 +1669,7 @@ function cleanupPreviewRawEdit() {
   const preview = document.getElementById("readingPreview");
   if (!preview) return;
   previewRawEditMode = false;
+  syncPreviewEditButton();
   preview.classList.remove("is-editing-raw");
   preview.removeAttribute("contenteditable");
   preview.removeAttribute("spellcheck");
@@ -1704,6 +1720,12 @@ const DIGIT_PINYIN = {
 function isArabicDigit(ch) {
   return /^[0-9]$/.test(ch);
 }
+function isDigitString(text) {
+  return /^[0-9]+$/.test(text);
+}
+function getDigitStringPinyin(text) {
+  return [...text].map(ch => DIGIT_PINYIN[ch] || "").filter(Boolean).join(" ");
+}
 function needsAutoPinyin(ch) {
   return isCJK(ch) || isArabicDigit(ch);
 }
@@ -1718,18 +1740,36 @@ function isPunctuation(ch) {
 
 function buildUnitsFromChinese(chinese) {
   const chars = [...chinese.trim()];
-  const charsNeedingPinyin = chars.filter(needsAutoPinyin);
+  const charsNeedingPinyin = chars.filter(isCJK);
   const pinyinValues = generatePinyinForChars(charsNeedingPinyin, { silent: true }) || [];
   let pyIndex = 0;
 
-  return chars.map(ch => {
-    if (needsAutoPinyin(ch)) {
+  const units = [];
+
+  for (let i = 0; i < chars.length; i++) {
+    const ch = chars[i];
+
+    if (isArabicDigit(ch)) {
+      let digitText = ch;
+      while (i + 1 < chars.length && isArabicDigit(chars[i + 1])) {
+        i++;
+        digitText += chars[i];
+      }
+      units.push({ ch: digitText, py: getDigitStringPinyin(digitText), isPunct: false });
+      continue;
+    }
+
+    if (isCJK(ch)) {
       const py = pinyinValues[pyIndex] || "";
       pyIndex++;
-      return { ch, py, isPunct: false };
+      units.push({ ch, py, isPunct: false });
+      continue;
     }
-    return { ch, py: "", isPunct: true };
-  });
+
+    units.push({ ch, py: "", isPunct: true });
+  }
+
+  return units;
 }
 
 /**
@@ -1888,12 +1928,12 @@ function buildWrappedUnitGroups(renderedUnits) {
       continue;
     }
 
-    if (isArabicDigit(unit.ch) && lastGroup && lastGroup.dataset.kind === "digit") {
+    if (isDigitString(unit.ch) && lastGroup && lastGroup.dataset.kind === "digit") {
       lastGroup.appendChild(wu);
       continue;
     }
 
-    createGroup(isArabicDigit(unit.ch) ? "digit" : "char").appendChild(wu);
+    createGroup(isDigitString(unit.ch) ? "digit" : "char").appendChild(wu);
   }
 
   return groups;
@@ -1968,7 +2008,7 @@ function generate(options = {}) {
       errEl.textContent = "⚠️ 请先在上方阅读框中输入内容。";
       errEl.classList.add("show");
     }
-    renderEmptyPreview("请双击此处输入汉字内容。");
+    renderEmptyPreview("请点击“编辑内容 Edit Content”输入汉字。");
     return;
   }
 
