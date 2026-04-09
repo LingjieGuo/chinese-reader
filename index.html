@@ -649,6 +649,13 @@ input[type="range"]::-moz-range-thumb {
   row-gap: 5pt;
 }
 
+.unit-group {
+  display: inline-flex;
+  align-items: flex-start;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
 /* ─── Word Unit ─── */
 .wu {
   display: inline-flex;
@@ -1793,7 +1800,9 @@ function renderBlocks(blocks) {
     const zhLine = document.createElement("div");
     zhLine.className = "zh-line";
 
-    for (const unit of block.units) {
+    const renderedUnits = [];
+
+    for (const [unitIndex, unit] of block.units.entries()) {
       const wu = document.createElement("span");
       wu.className = "wu" + (unit.isPunct ? " wu-p" : "");
       if (!unit.isPunct) wu.onclick = function() { toggleWord(this); };
@@ -1802,7 +1811,7 @@ function renderBlocks(blocks) {
       const py = document.createElement("span");
       py.className = "py" + (unit.isPunct ? " py-p" : "");
       py.dataset.blockIndex = String(blockIndex);
-      py.dataset.unitIndex = String(zhLine.children.length);
+      py.dataset.unitIndex = String(unitIndex);
       /* non-breaking space gives punctuation slots the same height */
       py.textContent = unit.isPunct ? "\u00A0" : (unit.py || "\u00A0");
       if (!unit.isPunct) {
@@ -1844,7 +1853,12 @@ function renderBlocks(blocks) {
 
       wu.appendChild(py);
       wu.appendChild(ch);
-      zhLine.appendChild(wu);
+      renderedUnits.push({ unit, wu });
+    }
+
+    const unitGroups = buildWrappedUnitGroups(renderedUnits);
+    for (const group of unitGroups) {
+      zhLine.appendChild(group);
     }
     paraDiv.appendChild(zhLine);
 
@@ -1852,6 +1866,37 @@ function renderBlocks(blocks) {
   });
 
   area.appendChild(frag);
+}
+
+function buildWrappedUnitGroups(renderedUnits) {
+  const groups = [];
+  let lastGroup = null;
+
+  const createGroup = (kind) => {
+    const group = document.createElement("span");
+    group.className = "unit-group";
+    group.dataset.kind = kind;
+    groups.push(group);
+    lastGroup = group;
+    return group;
+  };
+
+  for (const item of renderedUnits) {
+    const { unit, wu } = item;
+    if (unit.isPunct) {
+      (lastGroup || createGroup("punct")).appendChild(wu);
+      continue;
+    }
+
+    if (isArabicDigit(unit.ch) && lastGroup && lastGroup.dataset.kind === "digit") {
+      lastGroup.appendChild(wu);
+      continue;
+    }
+
+    createGroup(isArabicDigit(unit.ch) ? "digit" : "char").appendChild(wu);
+  }
+
+  return groups;
 }
 
 function generatePinyinForChars(chars, options = {}) {
