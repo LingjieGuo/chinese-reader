@@ -1185,6 +1185,8 @@ let highlightMode = false;
 let highlightColor = "yellow";
 let previewRawEditMode = false;
 let previewRawDraft = "";
+let previewRawOriginal = "";
+const manualPinyinOverrides = new Map();
 const HIGHLIGHT_COLOR_CLASSES = ["wu-hi-yellow", "wu-hi-red", "wu-hi-green", "wu-hi-blue"];
 const controlsPanelState = {
   panelMode: false,
@@ -1393,11 +1395,43 @@ function getPinyinTargets(blockIndex, unitIndex) {
   };
 }
 
+function getBlockSourceLine(blockIndex) {
+  const para = document.querySelector(`.para-block[data-block-index="${blockIndex}"]`);
+  return para ? (para.dataset.sourceLine || "") : "";
+}
+
+function getBlockLineIndex(blockIndex) {
+  const para = document.querySelector(`.para-block[data-block-index="${blockIndex}"]`);
+  return para ? (para.dataset.lineIndex || "") : "";
+}
+
+function getManualPinyinOverrideKey(lineIndex, sourceLine, unitIndex) {
+  return `${lineIndex}::${sourceLine}::${unitIndex}`;
+}
+
+function getManualPinyinOverride(lineIndex, sourceLine, unitIndex) {
+  return manualPinyinOverrides.get(getManualPinyinOverrideKey(lineIndex, sourceLine, unitIndex));
+}
+
+function setManualPinyinOverride(lineIndex, sourceLine, unitIndex, value) {
+  if (lineIndex === "" || !sourceLine) return;
+  const key = getManualPinyinOverrideKey(lineIndex, sourceLine, unitIndex);
+  if (value) {
+    manualPinyinOverrides.set(key, value);
+    return;
+  }
+  manualPinyinOverrides.delete(key);
+}
+
 function setPinyinValue(blockIndex, unitIndex, value, options = {}) {
   const { keepVisible = false, skipDisplay = false } = options;
   const normalized = (value || "").replace(/\u00A0/g, " ").trim();
   const { para, display } = getPinyinTargets(blockIndex, unitIndex);
+  const lineIndex = getBlockLineIndex(blockIndex);
+  const sourceLine = getBlockSourceLine(blockIndex);
   const wordUnit = para ? para.querySelector(`.wu .py[data-unit-index="${unitIndex}"]`)?.parentElement : null;
+
+  setManualPinyinOverride(lineIndex, sourceLine, unitIndex, normalized);
 
   if (display && !skipDisplay) {
     display.textContent = normalized || "\u00A0";
@@ -1499,6 +1533,10 @@ function setHighlightColor(color) {
 }
 
 function printReadingContent() {
+  if (previewRawEditMode) {
+    commitPreviewRawEdit();
+  }
+
   const area = document.getElementById("readingPreview");
   if (!area) return;
 
@@ -1621,7 +1659,8 @@ function enterPreviewRawEdit() {
 
   previewRawEditMode = true;
   syncPreviewEditButton();
-  previewRawDraft = getReadingSourceText();
+  previewRawOriginal = getReadingSourceText();
+  previewRawDraft = previewRawOriginal;
   preview.classList.add("is-editing-raw");
   preview.setAttribute("contenteditable", "plaintext-only");
   preview.setAttribute("spellcheck", "false");
@@ -1689,6 +1728,8 @@ function commitPreviewRawEdit() {
 }
 
 function cancelPreviewRawEdit() {
+  previewRawDraft = previewRawOriginal;
+  setReadingSourceText(previewRawOriginal);
   cleanupPreviewRawEdit();
   generate({
     scrollIntoView: false,
@@ -1726,6 +1767,9 @@ function isDigitString(text) {
 function getDigitStringPinyin(text) {
   return [...text].map(ch => DIGIT_PINYIN[ch] || "").filter(Boolean).join(" ");
 }
+function hasPinyinLibAvailable() {
+  return !!(window.pinyinPro && typeof window.pinyinPro.pinyin === "function");
+}
 function needsAutoPinyin(ch) {
   return isCJK(ch) || isArabicDigit(ch);
 }
@@ -1740,10 +1784,6 @@ function isPunctuation(ch) {
 
 function buildUnitsFromChinese(chinese) {
   const chars = [...chinese.trim()];
-  const charsNeedingPinyin = chars.filter(isCJK);
-  const pinyinValues = generatePinyinForChars(charsNeedingPinyin, { silent: true }) || [];
-  let pyIndex = 0;
-
   const units = [];
 
   for (let i = 0; i < chars.length; i++) {
@@ -1760,14 +1800,26 @@ function buildUnitsFromChinese(chinese) {
     }
 
     if (isCJK(ch)) {
-      const py = pinyinValues[pyIndex] || "";
-      pyIndex++;
-      units.push({ ch, py, isPunct: false });
+      units.push({ ch, py: "", isPunct: false, needsChinesePinyin: true });
       continue;
     }
 
     units.push({ ch, py: "", isPunct: true });
   }
+
+  const chineseUnits = units.filter(unit => unit.needsChinesePinyin);
+  const pinyinValues = generatePinyinForChars(chineseUnits.map(unit => unit.ch), { silent: true }) || [];
+
+  chineseUnits.forEach((unit, index) => {
+    unit.py = pinyinValues[index] || "";
+    delete unit.needsChinesePinyin;
+  });
+
+  units.forEach(unit => {
+    if (unit.needsChinesePinyin) {
+      delete unit.needsChinesePinyin;
+    }
+  });
 
   return units;
 }
@@ -1793,18 +1845,25 @@ function parseText(raw) {
     }
 
     if (!looksLikeChineseLine(zhLine)) {
-      warns.push(`${label}：第一行需要是汉语内容，已跳过。`);
+      warns.push(`${label}：需要是汉语内容，已跳过。`);
       return;
     }
 
     const units = buildUnitsFromChinese(zhLine);
-    const cjkCount = units.filter(unit => !unit.isPunct).length;
-    const filledCount = units.filter(unit => !unit.isPunct && unit.py).length;
-    if (cjkCount && filledCount !== cjkCount) {
+    units.forEach((unit, unitIndex) => {
+      if (unit.isPunct) return;
+      const override = getManualPinyinOverride(idx, zhLine, unitIndex);
+      if (typeof override === "string") {
+        unit.py = override;
+      }
+    });
+    const chineseUnitCount = units.filter(unit => isCJK(unit.ch)).length;
+    const filledChineseCount = units.filter(unit => isCJK(unit.ch) && unit.py).length;
+    if (chineseUnitCount && filledChineseCount !== chineseUnitCount) {
       warns.push(`${label}：有部分汉字暂时未能自动生成拼音，可直接点击上方拼音进行修改。`);
     }
 
-    blocks.push({ units, isEmpty: false });
+    blocks.push({ units, isEmpty: false, sourceLine: zhLine, lineIndex: idx });
   });
 
   return { blocks, warns };
@@ -1830,6 +1889,8 @@ function renderBlocks(blocks) {
     const paraDiv = document.createElement("div");
     paraDiv.className = "para-block";
     paraDiv.dataset.blockIndex = String(blockIndex);
+    paraDiv.dataset.lineIndex = block.lineIndex != null ? String(block.lineIndex) : "";
+    paraDiv.dataset.sourceLine = block.sourceLine || "";
 
     if (block.isEmpty) {
       frag.appendChild(paraDiv);
@@ -1941,11 +2002,11 @@ function buildWrappedUnitGroups(renderedUnits) {
 
 function generatePinyinForChars(chars, options = {}) {
   const { silent = false } = options;
-  const hasPinyinLib = window.pinyinPro && typeof window.pinyinPro.pinyin === "function";
+  const hasPinyinLib = hasPinyinLibAvailable();
 
   if (!hasPinyinLib) {
-    const fallback = chars.map(ch => DIGIT_PINYIN[ch] || "");
-    const hasMissing = chars.some((ch, idx) => !fallback[idx] && needsAutoPinyin(ch));
+    const fallback = chars.map(() => "");
+    const hasMissing = chars.some((ch, idx) => !fallback[idx] && isCJK(ch));
     if (hasMissing) {
       if (!silent) {
         const errEl = document.getElementById("errMsg");
@@ -1959,7 +2020,6 @@ function generatePinyinForChars(chars, options = {}) {
   }
 
   return chars.map(ch => {
-    if (DIGIT_PINYIN[ch]) return DIGIT_PINYIN[ch];
     if (!isCJK(ch)) return "";
 
     const one = window.pinyinPro.pinyin(ch, {
@@ -2010,6 +2070,13 @@ function generate(options = {}) {
     }
     renderEmptyPreview("请点击“编辑内容 Edit Content”输入汉字。");
     return;
+  }
+
+  if ([...raw].some(isCJK) && !hasPinyinLibAvailable()) {
+    if (errEl) {
+      errEl.textContent = "❌ 自动拼音功能当前不可用。请确认浏览器可以联网加载拼音库，或手动输入拼音。";
+      errEl.classList.add("show");
+    }
   }
 
   const { blocks, warns } = parseText(raw);
