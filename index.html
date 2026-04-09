@@ -9,8 +9,8 @@
    CSS Variables
 ============================================================ */
 :root {
-  --char-size: 30px;
-  --pinyin-size: 16px;
+  --char-size: 36px;
+  --pinyin-size: 20px;
   --primary: #3a6fa8;
   --primary-dk: #2a5590;
   --primary-lt: #e8f1fb;
@@ -1109,14 +1109,14 @@ textarea.input-area:focus {
       <div class="control-row control-sliders">
         <div class="control-slider char-slider">
           <div class="slider-box">
-          <div class="slider-label"><span>汉字字号 Char size</span><span class="v" id="csVal">30px</span></div>
-          <input type="range" id="csSlider" min="18" max="64" value="30" oninput="onSlide(this,'csVal','--char-size')">
+          <div class="slider-label"><span>汉字字号 Char size</span><span class="v" id="csVal">36px</span></div>
+          <input type="range" id="csSlider" min="18" max="64" value="36" oninput="onSlide(this,'csVal','--char-size')">
           </div>
         </div>
         <div class="control-slider pinyin-slider">
           <div class="slider-box">
-          <div class="slider-label"><span>拼音字号 Pinyin size</span><span class="v" id="psVal">16px</span></div>
-          <input type="range" id="psSlider" min="10" max="32" value="16" oninput="onSlide(this,'psVal','--pinyin-size')">
+          <div class="slider-label"><span>拼音字号 Pinyin size</span><span class="v" id="psVal">20px</span></div>
+          <input type="range" id="psSlider" min="10" max="32" value="20" oninput="onSlide(this,'psVal','--pinyin-size')">
           </div>
         </div>
       </div>
