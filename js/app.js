@@ -15,6 +15,8 @@ const manualPinyinOverrides = new Map();
 const HIGHLIGHT_COLOR_CLASSES = ["wu-hi-yellow", "wu-hi-red", "wu-hi-green", "wu-hi-blue"];
 const INITIAL_READER_SCROLL_DELAY = 3000;
 const INITIAL_READER_SCROLL_DURATION = 4500;
+const LESSON_READER_SCROLL_DURATION = 2200;
+const SCREEN_TRANSITION_SPAN = 0.78;
 
 /* ════════════════════════════════════════════════
    INIT
@@ -24,6 +26,7 @@ window.addEventListener("DOMContentLoaded", () => {
   initSliders();
   initInputAutoResizeSync();
   initReadingPreviewEditing();
+  initLessonSelector();
   syncPreviewEditButton();
   initSideMenuScrollFollower();
   /* set collapsible open height after layout stabilises */
@@ -52,15 +55,49 @@ function updateHeroMotion() {
   const viewport = Math.max(window.innerHeight || 1, 1);
   const progress = motionQuery.matches ? 0 : Math.min(1, Math.max(0, window.scrollY / (viewport * .86)));
   const titleProgress = Math.pow(progress, 1.45);
-  const readerInput = Math.min(1, Math.max(0, (progress - .06) / .86));
-  const readerProgress = 1 - Math.pow(1 - readerInput, 3);
+  const readerProgress = getReaderScreenProgress(viewport, motionQuery.matches);
   const toolsInput = Math.min(1, Math.max(0, (progress - .92) / .08));
   const toolsProgress = 1 - Math.pow(1 - toolsInput, 2);
+  const lessonProgress = getScreenCenterProgress(".lesson-picker-card", viewport, motionQuery.matches);
+  const infoProgress = getScreenCenterProgress(".reader-info-page", viewport, motionQuery.matches);
   document.body.classList.toggle("is-tools-ready", toolsProgress > .98 || motionQuery.matches);
   document.documentElement.style.setProperty("--hero-progress", progress.toFixed(4));
   document.documentElement.style.setProperty("--title-progress", titleProgress.toFixed(4));
   document.documentElement.style.setProperty("--reader-progress", readerProgress.toFixed(4));
   document.documentElement.style.setProperty("--tools-progress", toolsProgress.toFixed(4));
+  document.documentElement.style.setProperty("--lesson-progress", lessonProgress.toFixed(4));
+  document.documentElement.style.setProperty("--info-progress", infoProgress.toFixed(4));
+}
+
+function getScreenCenterProgress(selector, viewport, reduceMotion) {
+  const screen = document.querySelector(selector);
+  if (!screen) return 0;
+  if (reduceMotion) return 1;
+  const rect = screen.getBoundingClientRect();
+  const screenCenter = rect.top + (rect.height / 2);
+  const viewportCenter = viewport / 2;
+  const distance = Math.abs(screenCenter - viewportCenter);
+  const raw = 1 - (distance / (viewport * SCREEN_TRANSITION_SPAN));
+  const clamped = Math.min(1, Math.max(0, raw));
+  return 1 - Math.pow(1 - clamped, 3);
+}
+
+function getReaderScreenProgress(viewport, reduceMotion) {
+  const readerScreen = document.querySelector(".reading-shell");
+  if (!readerScreen) return 0;
+  if (reduceMotion) return 1;
+
+  const rect = readerScreen.getBoundingClientRect();
+  if (rect.top > 0) {
+    return getScreenCenterProgress(".reading-shell", viewport, reduceMotion);
+  }
+
+  const exitStartLine = viewport / 3;
+  if (rect.bottom > exitStartLine) return 1;
+
+  const raw = rect.bottom / exitStartLine;
+  const clamped = Math.min(1, Math.max(0, raw));
+  return 1 - Math.pow(1 - clamped, 2);
 }
 
 function initSideMenuScrollFollower() {
@@ -1179,4 +1216,117 @@ function loadSample(options = {}) {
   if (!input) return;
   input.value = SAMPLE;
   generate(options);
+}
+
+/* ════════════════════════════════════════════════
+   BUILT-IN LESSONS
+════════════════════════════════════════════════ */
+function getBuiltInLessons() {
+  return Array.isArray(window.CHINESE_READER_LESSONS)
+    ? window.CHINESE_READER_LESSONS
+    : [];
+}
+
+function initLessonSelector() {
+  const select = document.getElementById("lessonSelect");
+  const optionsEl = document.getElementById("lessonOptions");
+  if (!select) return;
+
+  const lessons = getBuiltInLessons();
+  lessons.forEach((lesson) => {
+    const option = document.createElement("option");
+    option.value = lesson.id;
+    option.textContent = lesson.title;
+    select.appendChild(option);
+
+    if (optionsEl) {
+      const optionButton = document.createElement("button");
+      optionButton.className = "lesson-option";
+      optionButton.type = "button";
+      optionButton.role = "option";
+      optionButton.dataset.lessonId = lesson.id;
+      optionButton.textContent = lesson.title;
+      optionButton.addEventListener("click", () => {
+        select.value = lesson.id;
+        updateSelectedLessonDescription();
+        setLessonDropdownOpen(false);
+      });
+      optionsEl.appendChild(optionButton);
+    }
+  });
+
+  select.addEventListener("change", updateSelectedLessonDescription);
+  document.addEventListener("click", closeLessonDropdownOnOutsideClick);
+  document.addEventListener("keydown", handleLessonDropdownKeydown);
+  updateSelectedLessonDescription();
+}
+
+function updateSelectedLessonDescription() {
+  const select = document.getElementById("lessonSelect");
+  const trigger = document.getElementById("lessonSelectTrigger");
+  const options = document.querySelectorAll(".lesson-option");
+  const lessonMsg = document.getElementById("lessonMsg");
+  if (!select) return;
+  const isPlaceholder = !select.value;
+  const selectedLesson = getBuiltInLessons().find(item => item.id === select.value);
+  if (trigger) {
+    trigger.textContent = selectedLesson ? selectedLesson.title : "请选择课文 Please select a text";
+    trigger.classList.toggle("is-placeholder", isPlaceholder);
+  }
+  options.forEach((option) => {
+    const isSelected = option.dataset.lessonId === select.value;
+    option.classList.toggle("is-selected", isSelected);
+    option.setAttribute("aria-selected", String(isSelected));
+  });
+
+  if (lessonMsg) {
+    lessonMsg.classList.remove("show");
+    lessonMsg.textContent = "";
+  }
+}
+
+function toggleLessonDropdown(event) {
+  if (event) event.stopPropagation();
+  const dropdown = document.getElementById("lessonDropdown");
+  setLessonDropdownOpen(!(dropdown && dropdown.classList.contains("is-open")));
+}
+
+function setLessonDropdownOpen(open) {
+  const dropdown = document.getElementById("lessonDropdown");
+  const trigger = document.getElementById("lessonSelectTrigger");
+  if (!dropdown || !trigger) return;
+  dropdown.classList.toggle("is-open", open);
+  trigger.setAttribute("aria-expanded", String(open));
+}
+
+function closeLessonDropdownOnOutsideClick(event) {
+  const dropdown = document.getElementById("lessonDropdown");
+  if (!dropdown || dropdown.contains(event.target)) return;
+  setLessonDropdownOpen(false);
+}
+
+function handleLessonDropdownKeydown(event) {
+  if (event.key !== "Escape") return;
+  setLessonDropdownOpen(false);
+}
+
+function loadSelectedLesson() {
+  const select = document.getElementById("lessonSelect");
+  const input = document.getElementById("customInput");
+  const lessonMsg = document.getElementById("lessonMsg");
+  if (!select || !input) return;
+
+  const lesson = getBuiltInLessons().find(item => item.id === select.value);
+  if (!lesson) {
+    if (lessonMsg) {
+      lessonMsg.textContent = "请先选择一篇课文。Please select a text.";
+      lessonMsg.classList.add("show");
+    }
+    return;
+  }
+
+  setReadingSourceText(lesson.text || "");
+  generate({ scrollIntoView: false });
+  updateSelectedLessonDescription();
+  slowScrollToElement(document.querySelector(".reading-shell"), LESSON_READER_SCROLL_DURATION);
 }
