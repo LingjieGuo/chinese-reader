@@ -104,10 +104,38 @@
     </div>
   </div><!-- /input card -->
 
+  <!-- ===== BUILT-IN LESSONS ===== -->
+  <div class="card lesson-picker-card" aria-label="内置课文 Built-in lessons">
+    <div class="lesson-picker">
+      <div class="msg lesson-msg" id="lessonMsg"></div>
+      <div class="lesson-picker-controls">
+        <select class="lesson-native-select" id="lessonSelect" aria-label="选择内置课文 Select a built-in lesson" tabindex="-1" aria-hidden="true">
+          <option value="">请选择课文 Please select a text</option>
+        </select>
+        <div class="lesson-dropdown" id="lessonDropdown">
+          <button class="lesson-select-trigger is-placeholder" id="lessonSelectTrigger" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="lessonOptions" onclick="toggleLessonDropdown(event)">请选择课文 Please select a text</button>
+          <div class="lesson-options" id="lessonOptions" role="listbox" aria-label="选择内置课文 Select a built-in lesson"></div>
+        </div>
+        <button class="lesson-load-btn" type="button" aria-label="载入课文 Load lesson" title="载入课文 Load lesson" onclick="loadSelectedLesson()"><img class="tool-icon-img lesson-load-icon" src="icons/load-lesson.svg" alt="" aria-hidden="true"></button>
+      </div>
+    </div>
+  </div><!-- /lesson picker card -->
+
+  <!-- ===== FOOTER INFO ===== -->
+  <section class="reader-info-page" aria-label="拼音说明与联系信息 Pinyin note and contact">
+    <div class="reader-info-content">
+      <p class="reader-info-note">拼音仅供参考，可能不完全准确。</p>
+      <p class="reader-info-note reader-info-note-en">Pinyin is provided for reference only and may not always be accurate.</p>
+      <p class="reader-info-contact">Contact me: <a href="mailto:lingjieguo98@gmail.com">lingjieguo98@gmail.com</a></p>
+      <p class="reader-info-copyright">© 2026 Lingjie Guo</p>
+    </div>
+  </section>
+
 
 </main><!-- /wrap -->
 
 <script src="https://unpkg.com/pinyin-pro/dist/index.js"></script>
+<script src="lessons/lesson-catalog.js"></script>
 
 <!-- ===================================================
      JAVASCRIPT
