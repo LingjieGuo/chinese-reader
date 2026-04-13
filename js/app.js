@@ -133,7 +133,7 @@ function forceEnableTools() {
 }
 
 function scheduleInitialReaderScroll() {
-  const target = document.getElementById("readingCard");
+  const target = document.querySelector(".reading-shell");
   if (!target) return;
 
   let userMoved = false;
